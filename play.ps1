@@ -51,10 +51,16 @@ try {
             Remove-Item -LiteralPath $stagedDataMarker
         }
     }
-    $requiredAssets = @('WoW\Data', 'skate-data\assets\rig.json', 'skate-data\assets\board.json', 'skate-audio\pop_1.wav', (Join-Path $Server 'compose.yaml'))
+    # Startup derives rig.json and board.json from skater.glb; audio is optional.
+    $requiredAssets = @(
+        @{ Path = (Join-Path $PSScriptRoot 'WoW\Data'); Type = 'Container' },
+        @{ Path = (Join-Path $PSScriptRoot 'skate-data\assets\private\skater.glb'); Type = 'Leaf' },
+        @{ Path = (Join-Path $Server 'compose.yaml'); Type = 'Leaf' }
+    )
     foreach ($asset in $requiredAssets) {
-        if (-not (Test-Path -LiteralPath $asset)) {
-            throw 'Game setup is incomplete. Run setup.bat first.'
+        if (-not (Test-Path -LiteralPath $asset.Path -PathType $asset.Type)) {
+            $kind = if ($asset.Type -eq 'Container') { 'folder' } else { 'file' }
+            throw "Game setup is incomplete: missing required $kind '$($asset.Path)'. Run setup.bat first."
         }
     }
 
